@@ -21,7 +21,7 @@ import java.util.Objects;
 import ru.max.botapi.client.HttpMethod;
 import ru.max.botapi.client.MaxClient;
 import ru.max.botapi.client.MaxQuery;
-import ru.max.botapi.model.SimpleQueryResult;
+import ru.max.botapi.model.AddedMemberList;
 import ru.max.botapi.model.UserIdsList;
 
 /**
@@ -32,7 +32,7 @@ import ru.max.botapi.model.UserIdsList;
  * api.addMembers(new UserIdsList(List.of(111L, 222L)), 123456789L).execute();
  * }</pre>
  */
-public class AddMembersQuery extends MaxQuery<SimpleQueryResult> {
+public class AddMembersQuery extends MaxQuery<AddedMemberList> {
 
     /**
      * Creates an AddMembersQuery.
@@ -42,7 +42,7 @@ public class AddMembersQuery extends MaxQuery<SimpleQueryResult> {
      * @param chatId  the chat identifier
      */
     public AddMembersQuery(MaxClient client, UserIdsList userIds, long chatId) {
-        super(client, "/chats/" + chatId + "/members", HttpMethod.POST, SimpleQueryResult.class);
+        super(client, "/chats/" + chatId + "/members", HttpMethod.POST, AddedMemberList.class);
         this.body = Objects.requireNonNull(userIds, "userIds must not be null");
     }
 }

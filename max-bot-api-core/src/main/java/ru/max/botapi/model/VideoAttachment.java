@@ -29,7 +29,7 @@ import java.util.Objects;
  */
 public record VideoAttachment(
         VideoPayload payload,
-        @Nullable String thumbnail,
+        @Nullable VideoThumbnailPayload thumbnail,
         @Nullable Integer width,
         @Nullable Integer height,
         @Nullable Integer duration
@@ -69,4 +69,21 @@ public record VideoAttachment(
             Objects.requireNonNull(token, "token must not be null");
         }
     }
+
+    /**
+     * Payload for a video thumbnail.
+     *
+     * @param url   video URL
+     */
+    public record VideoThumbnailPayload(String url) {
+        /**
+         * Creates a VideoThumbnailPayload.
+         *
+         * @param url   must not be {@code null}
+         */
+        public VideoThumbnailPayload {
+            Objects.requireNonNull(url, "url must not be null");
+        }
+    }
+
 }

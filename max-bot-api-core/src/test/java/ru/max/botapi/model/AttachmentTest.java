@@ -37,9 +37,10 @@ class AttachmentTest {
     @Test
     void videoAttachment_construction() {
         var payload = new VideoAttachment.VideoPayload("http://vid", "vtok");
-        var att = new VideoAttachment(payload, "http://thumb", 1920, 1080, 120);
+        var att = new VideoAttachment(payload, new VideoAttachment.VideoThumbnailPayload("http://thumb"),
+                1920, 1080, 120);
         assertThat(att.type()).isEqualTo("video");
-        assertThat(att.thumbnail()).isEqualTo("http://thumb");
+        assertThat(att.thumbnail().url()).isEqualTo("http://thumb");
         assertThat(att.width()).isEqualTo(1920);
     }
 

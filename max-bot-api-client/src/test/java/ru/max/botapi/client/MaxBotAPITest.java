@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import ru.max.botapi.jackson.JacksonMaxSerializer;
 import ru.max.botapi.model.ActionRequestBody;
+import ru.max.botapi.model.AddedMemberList;
 import ru.max.botapi.model.BotInfo;
 import ru.max.botapi.model.BotPatch;
 import ru.max.botapi.model.CallbackAnswer;
@@ -315,7 +316,7 @@ class MaxBotAPITest {
                         .withBody("{\"success\": true}")));
 
         UserIdsList ids = new UserIdsList(List.of(111L, 222L));
-        SimpleQueryResult result = api.addMembers(ids, 123L).execute();
+        AddedMemberList result = api.addMembers(ids, 123L).execute();
 
         assertThat(result.success()).isTrue();
     }

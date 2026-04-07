@@ -22,16 +22,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import ru.max.botapi.core.TypeReference;
 import ru.max.botapi.model.ActionRequestBody;
-import ru.max.botapi.model.Attachment;
 import ru.max.botapi.model.AttachmentRequest;
 import ru.max.botapi.model.AudioAttachment;
 import ru.max.botapi.model.BotCommand;
 import ru.max.botapi.model.BotPatch;
 import ru.max.botapi.model.ButtonIntent;
-import ru.max.botapi.model.CallbackButton;
-import ru.max.botapi.model.Chat;
 import ru.max.botapi.model.ChatAdminsList;
 import ru.max.botapi.model.ChatList;
 import ru.max.botapi.model.ChatMember;
@@ -41,12 +37,10 @@ import ru.max.botapi.model.ChatPermission;
 import ru.max.botapi.model.ChatStatus;
 import ru.max.botapi.model.ChatType;
 import ru.max.botapi.model.ConstructedMessage;
-import ru.max.botapi.model.ContactAttachment;
 import ru.max.botapi.model.FileAttachment;
 import ru.max.botapi.model.GetPinnedMessageResult;
 import ru.max.botapi.model.GetSubscriptionsResult;
 import ru.max.botapi.model.Image;
-import ru.max.botapi.model.InlineKeyboardAttachment;
 import ru.max.botapi.model.LocationAttachment;
 import ru.max.botapi.model.LocationAttachmentRequest;
 import ru.max.botapi.model.MediaPayload;
@@ -66,7 +60,6 @@ import ru.max.botapi.model.PhotoAttachment;
 import ru.max.botapi.model.SendMessageResult;
 import ru.max.botapi.model.SenderAction;
 import ru.max.botapi.model.SimpleQueryResult;
-import ru.max.botapi.model.StickerAttachment;
 import ru.max.botapi.model.Subscription;
 import ru.max.botapi.model.TextFormat;
 import ru.max.botapi.model.Update;
@@ -458,7 +451,7 @@ class AdditionalSerializationTest {
                     new PhotoAttachment.PhotoPayload("http://photo.jpg", "ptok", 1L));
             var video = new VideoAttachment(
                     new VideoAttachment.VideoPayload("http://video.mp4", "vtok"),
-                    "http://thumb.jpg", 1920, 1080, 60);
+                    new VideoAttachment.VideoThumbnailPayload("http://thumb.jpg"), 1920, 1080, 60);
             var audio = new AudioAttachment(new MediaPayload("http://audio.mp3", "atok"));
             var file = new FileAttachment(new MediaPayload("http://doc.pdf", "ftok"),
                     "doc.pdf", 1024L);
