@@ -27,9 +27,11 @@ import org.springframework.context.annotation.Configuration;
 import ru.max.botapi.client.MaxBotAPI;
 import ru.max.botapi.client.MaxClientConfig;
 import ru.max.botapi.client.queries.GetUpdatesQuery;
+import ru.max.botapi.core.PollingErrorHandler;
 import ru.max.botapi.core.UpdateHandler;
 import ru.max.botapi.longpolling.MaxLongPollingConsumer;
 import ru.max.botapi.model.UpdateList;
+import ru.max.botapi.model.UpdateType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -77,6 +79,19 @@ class MaxLongPollingAutoConfigurationTest {
         contextRunner
                 .withUserConfiguration(HandlerConfig.class)
                 .withPropertyValues(
+                        "max.bot.longpolling.token=test-token")
+                .run(context -> {
+                    assertThat(context).doesNotHaveBean(
+                            MaxLongPollingLifecycle.class);
+                });
+    }
+
+    @Test
+    void noBeansCreated_whenModeIsNone() {
+        contextRunner
+                .withUserConfiguration(HandlerConfig.class)
+                .withPropertyValues(
+                        "max.bot.mode=none",
                         "max.bot.longpolling.token=test-token")
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(
@@ -142,7 +157,22 @@ class MaxLongPollingAutoConfigurationTest {
                     assertThat(props.getPollTimeout())
                             .isEqualTo(60);
                     assertThat(props.getUpdateTypes())
-                            .containsExactly("message_created");
+                            .containsExactly(UpdateType.MESSAGE_CREATED);
+                });
+    }
+
+    @Test
+    void lifecycleCreated_withPollingErrorHandler() {
+        contextRunner
+                .withUserConfiguration(HandlerWithErrorHandlerConfig.class)
+                .withPropertyValues(
+                        "max.bot.mode=longpolling",
+                        "max.bot.longpolling.token=test-token")
+                .run(context -> {
+                    assertThat(context).hasSingleBean(
+                            MaxLongPollingLifecycle.class);
+                    assertThat(context).hasSingleBean(
+                            PollingErrorHandler.class);
                 });
     }
 
@@ -152,6 +182,20 @@ class MaxLongPollingAutoConfigurationTest {
         @Bean
         UpdateHandler updateHandler() {
             return update -> { };
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class HandlerWithErrorHandlerConfig {
+
+        @Bean
+        UpdateHandler updateHandler() {
+            return update -> { };
+        }
+
+        @Bean
+        PollingErrorHandler pollingErrorHandler() {
+            return e -> { };
         }
     }
 

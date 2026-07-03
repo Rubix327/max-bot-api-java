@@ -38,13 +38,17 @@ import ru.max.botapi.model.ChatStatus;
 import ru.max.botapi.model.ChatType;
 import ru.max.botapi.model.ConstructedMessage;
 import ru.max.botapi.model.FileAttachment;
+import ru.max.botapi.model.FileUploadedInfo;
 import ru.max.botapi.model.GetPinnedMessageResult;
 import ru.max.botapi.model.GetSubscriptionsResult;
 import ru.max.botapi.model.Image;
+import ru.max.botapi.model.ImageUploadedInfo;
+import ru.max.botapi.model.InlineKeyboardAttachment;
 import ru.max.botapi.model.LocationAttachment;
 import ru.max.botapi.model.LocationAttachmentRequest;
 import ru.max.botapi.model.MediaPayload;
 import ru.max.botapi.model.MediaRequestPayload;
+import ru.max.botapi.model.MediaUploadedInfo;
 import ru.max.botapi.model.Message;
 import ru.max.botapi.model.MessageBody;
 import ru.max.botapi.model.MessageChatCreatedUpdate;
@@ -64,13 +68,14 @@ import ru.max.botapi.model.Subscription;
 import ru.max.botapi.model.TextFormat;
 import ru.max.botapi.model.Update;
 import ru.max.botapi.model.UpdateList;
+import ru.max.botapi.model.UpdateType;
 import ru.max.botapi.model.UploadEndpoint;
-import ru.max.botapi.model.UploadedInfo;
 import ru.max.botapi.model.User;
 import ru.max.botapi.model.UserIdsList;
 import ru.max.botapi.model.VideoAttachment;
 import ru.max.botapi.model.VideoAttachmentDetails;
 import ru.max.botapi.model.VideoAttachmentRequest;
+import ru.max.botapi.model.VideoThumbnail;
 import ru.max.botapi.testsupport.FixtureLoader;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -89,7 +94,7 @@ class AdditionalSerializationTest {
         serializer = new JacksonMaxSerializer();
     }
 
-    private static final User USER = new User(99001L, "John Doe", "johndoe", false, 1700000100000L);
+    private static final User USER = new User(99001L, "John Doe", null, null, "johndoe", false, 1700000100000L);
     private static final MessageRecipient RECIPIENT = new MessageRecipient(50001L, ChatType.CHAT);
     private static final MessageBody BODY = new MessageBody("msg_001", 1L, "Hello, world!", null, null);
     private static final Message MSG = new Message(USER, RECIPIENT, 1700000500000L, null, BODY, null, null, null);
@@ -152,7 +157,7 @@ class AdditionalSerializationTest {
 
         @Test
         void chatMember_roundTrip() {
-            var member = new ChatMember(99001L, "Alice", "@alice", false, 1700000100000L,
+            var member = new ChatMember(99001L, "Alice", null, null, "@alice", false, 1700000100000L,
                     "A member", "http://avatar.jpg", "http://full.jpg",
                     1700000200000L, true, true, 1699000000000L,
                     List.of(ChatPermission.WRITE, ChatPermission.PIN_MESSAGE));
@@ -167,8 +172,34 @@ class AdditionalSerializationTest {
         }
 
         @Test
+        void chatMember_firstName_lastName_deserialized() {
+            String json = "{\"user_id\":1,\"name\":\"Ivan Petrov\",\"first_name\":\"Ivan\","
+                    + "\"last_name\":\"Petrov\",\"is_bot\":false,\"last_activity_time\":100,"
+                    + "\"last_access_time\":0,\"is_owner\":false,\"is_admin\":false,\"join_time\":0}";
+            ChatMember deserialized = serializer.deserialize(json, ChatMember.class);
+            assertThat(deserialized.firstName()).isEqualTo("Ivan");
+            assertThat(deserialized.lastName()).isEqualTo("Petrov");
+            assertThat(deserialized.name()).isEqualTo("Ivan Petrov");
+        }
+
+        @Test
+        void chatMember_allNewPermissions_deserialized() {
+            String json = "{\"user_id\":1,\"name\":\"Admin\",\"first_name\":\"Admin\","
+                    + "\"is_bot\":false,\"last_activity_time\":100,"
+                    + "\"last_access_time\":0,\"is_owner\":true,\"is_admin\":true,\"join_time\":0,"
+                    + "\"permissions\":[\"write\",\"read_all_messages\",\"can_call\","
+                    + "\"edit_link\",\"delete\",\"edit\",\"view_stats\"]}";
+            ChatMember deserialized = serializer.deserialize(json, ChatMember.class);
+            assertThat(deserialized.permissions()).contains(
+                    ChatPermission.WRITE, ChatPermission.READ_ALL_MESSAGES,
+                    ChatPermission.CAN_CALL, ChatPermission.EDIT_LINK,
+                    ChatPermission.DELETE, ChatPermission.EDIT, ChatPermission.VIEW_STATS);
+            assertThat(deserialized.permissions()).doesNotContainNull();
+        }
+
+        @Test
         void chatMembersList_roundTrip() {
-            var member = new ChatMember(1L, "Bob", null, false, 100L,
+            var member = new ChatMember(1L, "Bob", null, null, null, false, 100L,
                     null, null, null, 200L, false, false, 50L, null);
             var list = new ChatMembersList(List.of(member), 999L);
             String json = serializer.serialize(list);
@@ -188,11 +219,12 @@ class AdditionalSerializationTest {
         @Test
         void subscription_roundTrip() {
             var sub = new Subscription("https://example.com/webhook",
-                    List.of("message_created", "bot_started"));
+                    List.of(UpdateType.MESSAGE_CREATED, UpdateType.BOT_STARTED));
             String json = serializer.serialize(sub);
             Subscription deserialized = serializer.deserialize(json, Subscription.class);
             assertThat(deserialized.url()).isEqualTo("https://example.com/webhook");
-            assertThat(deserialized.updateTypes()).containsExactly("message_created", "bot_started");
+            assertThat(deserialized.updateTypes()).containsExactly(
+                    UpdateType.MESSAGE_CREATED, UpdateType.BOT_STARTED);
         }
 
         @Test
@@ -217,11 +249,36 @@ class AdditionalSerializationTest {
         }
 
         @Test
-        void uploadedInfo_roundTrip() {
-            var info = new UploadedInfo("upload_token_abc");
+        void fileUploadedInfo_deserialize_camelCaseFileId() {
+            // The MAX file upload endpoint returns camelCase "fileId"
+            // (not snake_case "file_id" like the rest of the API).
+            String json = "{\"fileId\": 3343344796, \"token\": \"file-tok\"}";
+            FileUploadedInfo info = serializer.deserialize(json, FileUploadedInfo.class);
+            assertThat(info.fileId()).isEqualTo(3343344796L);
+            assertThat(info.token()).isEqualTo("file-tok");
+        }
+
+        @Test
+        void imageUploadedInfo_deserialize_photosMap() {
+            String json = "{\"photos\": {"
+                    + "\"abc==\": {\"token\": \"t1\"},"
+                    + "\"def==\": {\"token\": \"t2\"}}}";
+            ImageUploadedInfo info = serializer.deserialize(json, ImageUploadedInfo.class);
+            assertThat(info.photos()).hasSize(2);
+            assertThat(info.photos().get("abc==").token()).isEqualTo("t1");
+            assertThat(info.photos().get("def==").token()).isEqualTo("t2");
+        }
+
+        @Test
+        void mediaUploadedInfo_roundTrip() {
+            // MediaUploadedInfo is constructed by the upload code (not deserialized from
+            // the API XML body), but it should still round-trip through Jackson cleanly
+            // for callers that want to log or persist it.
+            var info = new MediaUploadedInfo("video-tok", 1);
             String json = serializer.serialize(info);
-            UploadedInfo deserialized = serializer.deserialize(json, UploadedInfo.class);
-            assertThat(deserialized.token()).isEqualTo("upload_token_abc");
+            MediaUploadedInfo deserialized = serializer.deserialize(json, MediaUploadedInfo.class);
+            assertThat(deserialized.token()).isEqualTo("video-tok");
+            assertThat(deserialized.retval()).isEqualTo(1);
         }
 
         @Test
@@ -264,7 +321,7 @@ class AdditionalSerializationTest {
         void videoAttachmentDetails_roundTrip() {
             var details = new VideoAttachmentDetails(
                     "https://cdn.example.com/video.mp4", "vtok",
-                    "https://cdn.example.com/thumb.jpg", 1920, 1080, 120);
+                    new VideoThumbnail("https://cdn.example.com/thumb.jpg"), 1920, 1080, 120);
             String json = serializer.serialize(details);
             VideoAttachmentDetails deserialized = serializer.deserialize(json,
                     VideoAttachmentDetails.class);
@@ -407,7 +464,7 @@ class AdditionalSerializationTest {
 
         @Test
         void snakeCase_fieldMapping() {
-            var member = new ChatMember(1L, "Test", null, true, 100L,
+            var member = new ChatMember(1L, "Test", null, null, null, true, 100L,
                     null, null, null, 200L, true, false, 50L, null);
             String json = serializer.serialize(member);
             assertThatJson(json).node("user_id").isEqualTo(1);
@@ -450,8 +507,8 @@ class AdditionalSerializationTest {
             var photo = new PhotoAttachment(
                     new PhotoAttachment.PhotoPayload("http://photo.jpg", "ptok", 1L));
             var video = new VideoAttachment(
-                    new VideoAttachment.VideoPayload("http://video.mp4", "vtok"),
-                    new VideoAttachment.VideoThumbnailPayload("http://thumb.jpg"), 1920, 1080, 60);
+                    new VideoAttachment.VideoPayload("http://video.mp4", "vtok", null),
+                    new VideoThumbnail("http://thumb.jpg"), 1920, 1080, 60);
             var audio = new AudioAttachment(new MediaPayload("http://audio.mp3", "atok"));
             var file = new FileAttachment(new MediaPayload("http://doc.pdf", "ftok"),
                     "doc.pdf", 1024L);

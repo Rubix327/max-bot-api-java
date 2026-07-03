@@ -41,15 +41,15 @@ This library provides a complete, idiomatic Java 21 interface to all 31 MAX Bot 
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("ru.etsft.max:max-bot-api-client:0.2.0")
-    implementation("ru.etsft.max:max-bot-api-jackson:0.2.0")
-    implementation("ru.etsft.max:max-bot-api-longpolling:0.2.0")
+    implementation("ru.etsft.max:max-bot-api-client:0.3.1")
+    implementation("ru.etsft.max:max-bot-api-jackson:0.3.1")
+    implementation("ru.etsft.max:max-bot-api-longpolling:0.3.1")
 
     // Optional: webhook support
-    // implementation("ru.etsft.max:max-bot-api-webhook:0.2.0")
+    // implementation("ru.etsft.max:max-bot-api-webhook:0.3.1")
 
     // Optional: Spring Boot auto-configuration (webhook + long polling)
-    // implementation("ru.etsft.max:max-bot-api-spring-boot:0.2.0")
+    // implementation("ru.etsft.max:max-bot-api-spring-boot:0.3.1")
 }
 ```
 
@@ -60,24 +60,24 @@ dependencies {
     <dependency>
         <groupId>ru.etsft.max</groupId>
         <artifactId>max-bot-api-client</artifactId>
-        <version>0.2.0</version>
+        <version>0.3.1</version>
     </dependency>
     <dependency>
         <groupId>ru.etsft.max</groupId>
         <artifactId>max-bot-api-jackson</artifactId>
-        <version>0.2.0</version>
+        <version>0.3.1</version>
     </dependency>
     <dependency>
         <groupId>ru.etsft.max</groupId>
         <artifactId>max-bot-api-longpolling</artifactId>
-        <version>0.2.0</version>
+        <version>0.3.1</version>
     </dependency>
     <!-- Optional: Spring Boot auto-configuration (webhook + long polling) -->
     <!--
     <dependency>
         <groupId>ru.etsft.max</groupId>
         <artifactId>max-bot-api-spring-boot</artifactId>
-        <version>0.2.0</version>
+        <version>0.3.1</version>
     </dependency>
     -->
 </dependencies>
@@ -146,7 +146,7 @@ switch (update) {
 
 ### Uploading a File
 
-File upload is a two-step process: first obtain an upload URL from the API, then stream the file to that URL.
+File upload is a two-step process: first obtain an upload URL from the API, then stream the file to that URL. The upload response shape and the result type depend on the `UploadType` — see [File Upload](#file-upload) below for the full picture.
 
 ```java
 MaxUploadAPI uploadApi = new MaxUploadAPI();
@@ -155,7 +155,7 @@ MaxUploadAPI uploadApi = new MaxUploadAPI();
 UploadEndpoint endpoint = api.getUploadUrl(UploadType.FILE).execute();
 
 // Step 2: stream the file (no heap buffering)
-UploadedInfo info = uploadApi.upload(endpoint.url(), Path.of("file.txt"), "file.txt");
+FileUploadedInfo info = uploadApi.uploadFile(endpoint, Path.of("file.txt"), "file.txt");
 
 // Step 3: attach the uploaded token to a message
 api.sendMessage(new NewMessageBody(
@@ -198,6 +198,7 @@ MaxLongPollingConsumer consumer = MaxLongPollingConsumer.builder()
             // process message
         }
     })
+    .onError(e -> log.error("Polling error", e))  // optional; defaults to WARN logging
     .build();
 
 consumer.start();   // non-blocking; polling runs on a virtual thread
@@ -205,13 +206,53 @@ consumer.start();   // non-blocking; polling runs on a virtual thread
 consumer.stop();    // graceful shutdown
 ```
 
-The consumer calls `getUpdates` in a loop, tracking the marker returned by each response to avoid re-delivering events. Unhandled exceptions in the handler are caught and logged; the loop continues.
+The consumer calls `getUpdates` in a loop, tracking the marker returned by each response to avoid re-delivering events. Errors (network failures, API errors, handler exceptions) are passed to the `.onError()` callback; when not set, they are logged at WARN level. The loop always continues after an error with exponential backoff (1s → 2s → 4s → max 30s).
+
+To receive only specific event types, use `.types()` with one or more `UpdateType` constants:
+
+```java
+consumer = MaxLongPollingConsumer.builder()
+    .api(api)
+    .handler(handler)
+    .types(Set.of(UpdateType.MESSAGE_CREATED, UpdateType.MESSAGE_CALLBACK))
+    .build();
+```
+
+### Available update types
+
+| `UpdateType` constant | API value | Description |
+|---|---|---|
+| `MESSAGE_CREATED` | `message_created` | A new message was sent to a chat |
+| `MESSAGE_CALLBACK` | `message_callback` | A user tapped an inline keyboard button |
+| `MESSAGE_EDITED` | `message_edited` | An existing message was edited |
+| `MESSAGE_REMOVED` | `message_removed` | A message was deleted |
+| `BOT_ADDED` | `bot_added` | The bot was added to a chat |
+| `BOT_REMOVED` | `bot_removed` | The bot was removed from a chat |
+| `USER_ADDED` | `user_added` | A user was added to a chat |
+| `USER_REMOVED` | `user_removed` | A user was removed from a chat |
+| `BOT_STARTED` | `bot_started` | A user started a direct conversation with the bot |
+| `BOT_STOPPED` | `bot_stopped` | A user stopped (blocked) the bot |
+| `CHAT_TITLE_CHANGED` | `chat_title_changed` | The chat title was changed |
+| `MESSAGE_CONSTRUCTION_REQUEST` | `message_construction_request` | A message construction session was requested |
+| `MESSAGE_CONSTRUCTED` | `message_constructed` | A message construction session completed |
+| `MESSAGE_CHAT_CREATED` | `message_chat_created` | A new chat was created via a message |
 
 ---
 
 ## Webhooks
 
 `MaxWebhookServer` listens for HTTPS POST requests from the MAX platform and dispatches each incoming update to a handler. It validates the secret header before processing.
+
+To receive only specific event types, pass a set of `UpdateType` constants to `register()`:
+
+```java
+server.register(api, "https://example.com/webhook",
+    Set.of(UpdateType.MESSAGE_CREATED, UpdateType.MESSAGE_CALLBACK));
+// or pass null to receive all update types
+server.register(api, "https://example.com/webhook", null);
+```
+
+See the [update types table](#available-update-types) above.
 
 ```java
 MaxWebhookServer server = MaxWebhookServer.builder()
@@ -276,7 +317,7 @@ UpdateHandler updateHandler() {
 | `max.bot.webhook.url` | — | Public URL for webhook auto-registration. |
 | `max.bot.webhook.auto-register` | `true` | Register webhook subscription on startup. |
 | `max.bot.webhook.auto-unregister` | `true` | Unsubscribe on application shutdown. |
-| `max.bot.webhook.update-types` | — | List of update types to subscribe to (empty = all). |
+| `max.bot.webhook.update-types` | — | List of `UpdateType` constants to subscribe to (empty = all). See [update types table](#available-update-types). |
 
 #### Long Polling Mode
 
@@ -290,8 +331,8 @@ max:
       token: "your-bot-token"
       poll-timeout: 30
       update-types:
-        - message_created
-        - message_callback
+        - MESSAGE_CREATED
+        - MESSAGE_CALLBACK
 ```
 
 The starter automatically:
@@ -313,23 +354,45 @@ UpdateHandler updateHandler() {
 }
 ```
 
+To handle polling errors, declare a `PollingErrorHandler` bean. It is optional — when absent, errors are logged at WARN level:
+
+```java
+@Bean
+PollingErrorHandler pollingErrorHandler() {
+    return e -> log.error("Polling error", e);
+}
+```
+
 ##### Long Polling Configuration Properties
 
 | Property | Default | Description |
 |---|---|---|
 | `max.bot.longpolling.token` | — | Bot access token (required). |
 | `max.bot.longpolling.poll-timeout` | — | Poll timeout in seconds (defaults to `MaxClientConfig` value, 30s). |
-| `max.bot.longpolling.update-types` | — | List of update types to receive (empty = all). |
+| `max.bot.longpolling.update-types` | — | List of `UpdateType` constants to receive (empty = all). See [update types table](#available-update-types). |
 
 #### Choosing Between Modes
 
-The `max.bot.mode` property selects the update delivery mechanism. It accepts two values: `webhook` or `longpolling`. Only one mode can be active at a time — if the property is not set, neither auto-configuration activates.
+The `max.bot.mode` property selects the update delivery mechanism.
 
-Both modes use the same `UpdateHandler` interface (`ru.max.botapi.core.UpdateHandler`). Define a single handler bean and switch modes by changing only the `max.bot.mode` property — no code changes required.
+| Value | Description |
+|---|---|
+| `webhook` | Receive updates via HTTP webhook callbacks. Requires a public HTTPS endpoint. |
+| `longpolling` | Receive updates by polling the MAX API. No public URL required. |
+| `none` | Explicitly disable all bot update delivery. Neither auto-configuration activates. |
 
-| Property | Values | Description |
-|---|---|---|
-| `max.bot.mode` | `webhook`, `longpolling` | Update delivery mode (required). |
+Only one mode can be active at a time. When the property is not set, a WARN log is emitted at startup to remind you to configure it. Setting `max.bot.mode=none` silences the warning and makes the intent explicit — useful for test profiles or applications where the bot starter is on the classpath but not needed.
+
+Both `webhook` and `longpolling` modes use the same `UpdateHandler` interface (`ru.max.botapi.core.UpdateHandler`). Define a single handler bean and switch modes by changing only the `max.bot.mode` property — no code changes required.
+
+Example — disable the bot in a test profile:
+
+```yaml
+# application-test.yml
+max:
+  bot:
+    mode: none
+```
 
 ---
 
@@ -338,25 +401,59 @@ Both modes use the same `UpdateHandler` interface (`ru.max.botapi.core.UpdateHan
 The MAX API requires a two-step upload workflow:
 
 1. **Request an upload URL** — call `api.getUploadUrl(UploadType)` to receive a pre-signed `UploadEndpoint`.
-2. **Stream the file** — call `MaxUploadAPI.upload(url, path, filename)`. The implementation uses `java.net.http` with a `BodyPublisher` backed directly by the file, so arbitrarily large files are transferred without loading them into the heap.
+2. **Stream the file** — call the `MaxUploadAPI` method that matches the upload type. File-based overloads stream directly from disk via `java.net.http`'s `BodyPublisher`, so arbitrarily large files are transferred without loading them into the heap.
+
+The MAX platform returns three different response shapes depending on the upload type, and the moment when the attachment token becomes available also differs. To keep this explicit and type-safe, `MaxUploadAPI` exposes one method per type, each returning a dedicated subtype of the sealed `UploadedInfo` interface.
+
+| `UploadType` | Method                  | Result               | Token comes from         |
+|--------------|-------------------------|----------------------|--------------------------|
+| `FILE`       | `uploadFile(...)`       | `FileUploadedInfo`   | upload response (JSON)   |
+| `IMAGE`      | `uploadImage(...)`      | `ImageUploadedInfo`  | upload response (JSON)   |
+| `VIDEO`      | `uploadMedia(...)`      | `MediaUploadedInfo`  | `UploadEndpoint.token()` |
+| `AUDIO`      | `uploadMedia(...)`      | `MediaUploadedInfo`  | `UploadEndpoint.token()` |
+
+For video and audio the upload response is a tiny XML body (`<retval>1</retval>`) and carries no token; the attachment token must be taken from the `UploadEndpoint` returned by `POST /uploads`. `uploadMedia(...)` carries that token forward into the returned `MediaUploadedInfo` so callers don't have to thread it through manually.
+
+#### File
 
 ```java
 MaxUploadAPI uploadApi = new MaxUploadAPI();
+UploadEndpoint endpoint = api.getUploadUrl(UploadType.FILE).execute();
+FileUploadedInfo info = uploadApi.uploadFile(endpoint, Path.of("/tmp/doc.pdf"), "doc.pdf");
 
-// Obtain upload endpoint
-UploadEndpoint endpoint = api.getUploadUrl(UploadType.IMAGE).execute();
-
-// Upload — streaming, no heap buffering
-UploadedInfo info = uploadApi.upload(endpoint.url(), Path.of("/tmp/photo.jpg"), "photo.jpg");
-
-// Use the returned token in an attachment
-ImageAttachmentRequest attachment =
-    new ImageAttachmentRequest(new MediaRequestPayload(info.token()));
-
-api.sendMessage(new NewMessageBody(null, List.of(attachment), null, null, null))
-    .chatId(chatId)
-    .execute();
+FileAttachmentRequest att =
+    new FileAttachmentRequest(new MediaRequestPayload(info.token()));
+api.sendMessage(new NewMessageBody("File:", List.of(att), null, null, null))
+    .chatId(chatId).execute();
 ```
+
+#### Image
+
+```java
+UploadEndpoint endpoint = api.getUploadUrl(UploadType.IMAGE).execute();
+ImageUploadedInfo info = uploadApi.uploadImage(endpoint, Path.of("/tmp/photo.jpg"), "photo.jpg");
+
+// Pass the photos map verbatim into the request payload.
+ImageAttachmentRequest att = new ImageAttachmentRequest(
+    new PhotoAttachmentRequestPayload(null, null, info.photos()));
+api.sendMessage(new NewMessageBody(null, List.of(att), null, null, null))
+    .chatId(chatId).execute();
+```
+
+#### Video / Audio
+
+```java
+UploadEndpoint endpoint = api.getUploadUrl(UploadType.VIDEO).execute();
+MediaUploadedInfo info = uploadApi.uploadMedia(endpoint, Path.of("/tmp/clip.mp4"), "clip.mp4");
+
+// info.token() == endpoint.token() (the upload response carries no token).
+VideoAttachmentRequest att =
+    new VideoAttachmentRequest(new MediaRequestPayload(info.token()));
+api.sendMessage(new NewMessageBody("Video:", List.of(att), null, null, null))
+    .chatId(chatId).execute();
+```
+
+The MAX server may need a few seconds to finish processing the uploaded media. If `sendMessage` returns `attachment.not.ready`, retry the message send with a short backoff (no need to re-upload).
 
 Supported `UploadType` values: `IMAGE`, `VIDEO`, `AUDIO`, `FILE`.
 

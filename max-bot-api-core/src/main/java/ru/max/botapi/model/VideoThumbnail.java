@@ -16,27 +16,24 @@
 
 package ru.max.botapi.model;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
- * A webhook subscription.
+ * Thumbnail for a video attachment.
  *
- * @param url         webhook callback URL
- * @param updateTypes list of update types to receive; {@code null} means all types
+ * <p>Returned as the {@code thumbnail} field inside incoming
+ * {@link VideoAttachment} objects.</p>
+ *
+ * @param url thumbnail image URL
  */
-public record Subscription(
-        String url,
-        @Nullable List<UpdateType> updateTypes
-) {
+public record VideoThumbnail(String url) {
 
     /**
-     * Creates a Subscription.
+     * Creates a VideoThumbnail.
      *
      * @param url must not be {@code null}
      */
-    public Subscription {
+    public VideoThumbnail {
         Objects.requireNonNull(url, "url must not be null");
-        updateTypes = updateTypes == null ? null : List.copyOf(updateTypes);
     }
 }

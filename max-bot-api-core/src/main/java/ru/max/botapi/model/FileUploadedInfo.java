@@ -19,32 +19,27 @@ package ru.max.botapi.model;
 import java.util.Objects;
 
 /**
- * Detailed information about a video attachment returned by {@code GET /videos/{videoToken}}.
+ * Result of a successful upload of {@link UploadType#FILE}.
  *
- * @param url       video URL
- * @param token     video token
- * @param thumbnail optional thumbnail object with its own URL
- * @param width     optional video width in pixels
- * @param height    optional video height in pixels
- * @param duration  optional duration in seconds
+ * <p>The MAX platform returns a JSON response of the form:</p>
+ * <pre>{@code
+ * { "fileId": 3343344796, "token": "..." }
+ * }</pre>
+ *
+ * <p>Use {@link #token()} as the {@code token} field of {@code FileAttachmentRequest}
+ * when sending a message that references this file.</p>
+ *
+ * @param fileId numeric server-side identifier of the uploaded file
+ * @param token  attachment token to reference the file in messages
  */
-public record VideoAttachmentDetails(
-        String url,
-        String token,
-        @Nullable VideoThumbnail thumbnail,
-        @Nullable Integer width,
-        @Nullable Integer height,
-        @Nullable Integer duration
-) {
+public record FileUploadedInfo(long fileId, String token) implements UploadedInfo {
 
     /**
-     * Creates a VideoAttachmentDetails.
+     * Creates a FileUploadedInfo.
      *
-     * @param url   must not be {@code null}
      * @param token must not be {@code null}
      */
-    public VideoAttachmentDetails {
-        Objects.requireNonNull(url, "url must not be null");
+    public FileUploadedInfo {
         Objects.requireNonNull(token, "token must not be null");
     }
 }

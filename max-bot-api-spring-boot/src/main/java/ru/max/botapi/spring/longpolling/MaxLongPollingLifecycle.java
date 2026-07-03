@@ -16,7 +16,7 @@
 
 package ru.max.botapi.spring.longpolling;
 
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -25,8 +25,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.SmartLifecycle;
 
 import ru.max.botapi.client.MaxBotAPI;
+import ru.max.botapi.core.PollingErrorHandler;
 import ru.max.botapi.core.UpdateHandler;
 import ru.max.botapi.longpolling.MaxLongPollingConsumer;
+import ru.max.botapi.model.Nullable;
+import ru.max.botapi.model.UpdateType;
 
 /**
  * Spring {@link SmartLifecycle} that manages the {@link MaxLongPollingConsumer}.
@@ -37,8 +40,8 @@ import ru.max.botapi.longpolling.MaxLongPollingConsumer;
  * within the Spring lifecycle.</p>
  *
  * <p>The consumer runs on a virtual thread and does not block the main thread.
- * Errors during polling are handled by the consumer's built-in exponential
- * backoff mechanism.</p>
+ * Polling errors are forwarded to an optional {@link PollingErrorHandler} bean.
+ * When none is provided, the consumer's default WARN-level logging is used.</p>
  */
 public class MaxLongPollingLifecycle implements SmartLifecycle {
 
@@ -48,24 +51,26 @@ public class MaxLongPollingLifecycle implements SmartLifecycle {
     private final MaxBotAPI api;
     private final UpdateHandler handler;
     private final MaxLongPollingProperties properties;
+    @Nullable private final PollingErrorHandler errorHandler;
     private volatile MaxLongPollingConsumer consumer;
     private volatile boolean running;
 
     /**
-     * Creates a new long-polling lifecycle manager.
+     * Creates a new long-polling lifecycle manager with a custom error handler.
      *
-     * @param api        the MAX Bot API instance; must not be {@code null}
-     * @param handler    the update handler; must not be {@code null}
-     * @param properties the long-polling configuration; must not be {@code null}
+     * @param api          the MAX Bot API instance; must not be {@code null}
+     * @param handler      the update handler; must not be {@code null}
+     * @param properties   the long-polling configuration; must not be {@code null}
+     * @param errorHandler optional error handler; {@code null} uses default WARN logging
      */
     public MaxLongPollingLifecycle(MaxBotAPI api,
                                    UpdateHandler handler,
-                                   MaxLongPollingProperties properties) {
+                                   MaxLongPollingProperties properties,
+                                   @Nullable PollingErrorHandler errorHandler) {
         this.api = Objects.requireNonNull(api, "api must not be null");
-        this.handler = Objects.requireNonNull(handler,
-                "handler must not be null");
-        this.properties = Objects.requireNonNull(properties,
-                "properties must not be null");
+        this.handler = Objects.requireNonNull(handler, "handler must not be null");
+        this.properties = Objects.requireNonNull(properties, "properties must not be null");
+        this.errorHandler = errorHandler;
     }
 
     /**
@@ -80,13 +85,17 @@ public class MaxLongPollingLifecycle implements SmartLifecycle {
                 .api(api)
                 .handler(handler);
 
+        if (errorHandler != null) {
+            builder.onError(errorHandler::onError);
+        }
+
         if (properties.getPollTimeout() != null) {
             builder.pollTimeout(properties.getPollTimeout());
         }
 
         if (!properties.getUpdateTypes().isEmpty()) {
-            Set<String> types = new HashSet<>(properties.getUpdateTypes());
-            builder.updateTypes(types);
+            Set<UpdateType> types = EnumSet.copyOf(properties.getUpdateTypes());
+            builder.types(types);
         }
 
         consumer = builder.build();

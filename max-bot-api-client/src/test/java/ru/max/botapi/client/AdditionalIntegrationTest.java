@@ -50,6 +50,7 @@ import ru.max.botapi.model.SimpleQueryResult;
 import ru.max.botapi.model.SubscriptionRequestBody;
 import ru.max.botapi.model.TextFormat;
 import ru.max.botapi.model.UpdateList;
+import ru.max.botapi.model.UpdateType;
 import ru.max.botapi.model.UploadEndpoint;
 import ru.max.botapi.model.UploadType;
 import ru.max.botapi.model.UserIdsList;
@@ -451,7 +452,7 @@ class AdditionalIntegrationTest {
 
         SubscriptionRequestBody body = new SubscriptionRequestBody(
                 "https://example.com/webhook",
-                List.of("message_created", "bot_started", "message_callback"),
+                List.of(UpdateType.MESSAGE_CREATED, UpdateType.BOT_STARTED, UpdateType.MESSAGE_CALLBACK),
                 "webhook_secret_123");
         SimpleQueryResult result = api.subscribe(body).execute();
 
@@ -484,7 +485,7 @@ class AdditionalIntegrationTest {
         assertThat(result.subscriptions()).hasSize(2);
         assertThat(result.subscriptions().get(0).url()).isEqualTo("https://example.com/wh1");
         assertThat(result.subscriptions().get(0).updateTypes())
-                .containsExactly("message_created");
+                .containsExactly(UpdateType.MESSAGE_CREATED);
         assertThat(result.subscriptions().get(1).url()).isEqualTo("https://example.com/wh2");
         assertThat(result.subscriptions().get(1).updateTypes()).isNull();
     }
@@ -501,7 +502,7 @@ class AdditionalIntegrationTest {
                                 {
                                   "url": "https://cdn.example.com/vid.mp4",
                                   "token": "video_token_xyz",
-                                  "thumbnail": "https://cdn.example.com/thumb.jpg",
+                                  "thumbnail": { "url": "https://cdn.example.com/thumb.jpg" },
                                   "width": 3840,
                                   "height": 2160,
                                   "duration": 300
@@ -512,7 +513,7 @@ class AdditionalIntegrationTest {
 
         assertThat(details.url()).isEqualTo("https://cdn.example.com/vid.mp4");
         assertThat(details.token()).isEqualTo("video_token_xyz");
-        assertThat(details.thumbnail()).isEqualTo("https://cdn.example.com/thumb.jpg");
+        assertThat(details.thumbnail().url()).isEqualTo("https://cdn.example.com/thumb.jpg");
         assertThat(details.width()).isEqualTo(3840);
         assertThat(details.height()).isEqualTo(2160);
         assertThat(details.duration()).isEqualTo(300);
@@ -849,7 +850,7 @@ class AdditionalIntegrationTest {
                                 """)));
 
         UpdateList list = api.getUpdates()
-                .types(Set.of("message_created"))
+                .types(Set.of(UpdateType.MESSAGE_CREATED))
                 .execute();
 
         assertThat(list.updates()).hasSize(1);
