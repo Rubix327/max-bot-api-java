@@ -465,21 +465,21 @@ api.sendMessage(new NewMessageBody("Video:", List.of(att), null, null, null))
 
 ### Значения по умолчанию
 
-| Параметр | По умолчанию                  |
-|---|-------------------------------|
-| `baseUrl` | `https://platform-api.max.ru` |
-| `connectTimeout` | 10 секунд                     |
-| `requestTimeout` | 60 секунд                     |
-| `longPollTimeout` | 30 секунд                     |
-| `maxRetries` | 3                             |
-| `enableRateLimiting` | `true`                        |
-| `maxRequestsPerSecond` | 30                            |
+| Параметр | По умолчанию                   |
+|---|--------------------------------|
+| `baseUrl` | `https://platform-api2.max.ru` |
+| `connectTimeout` | 10 секунд                      |
+| `requestTimeout` | 60 секунд                      |
+| `longPollTimeout` | 30 секунд                      |
+| `maxRetries` | 3                              |
+| `enableRateLimiting` | `true`                         |
+| `maxRequestsPerSecond` | 30                             |
 
 ### Пользовательская конфигурация
 
 ```java
 MaxClientConfig config = MaxClientConfig.builder()
-    .baseUrl("https://platform-api.max.ru")
+    .baseUrl("https://platform-api2.max.ru")
     .connectTimeout(Duration.ofSeconds(5))
     .requestTimeout(Duration.ofSeconds(20))
     .longPollTimeout(Duration.ofSeconds(60))

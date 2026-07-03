@@ -69,8 +69,8 @@ class EdgeCaseTest {
     @Test
     void chat_withAllFieldsPopulated() {
         var icon = new Image("http://icon.png");
-        var dialogUser = new UserWithPhoto(2L, "Bob", "@bob", false, 200L,
-                "desc", "http://avatar", "http://full");
+        var dialogUser = new UserWithPhoto(2L, "Bob", "Bob", "Odenkirk", "@bob",
+                false, 200L, "desc", "http://avatar", "http://full");
         var pinnedMsg = new Message(USER, RECIPIENT, 500L, null, BODY, null, null, null);
         var chat = new Chat(10L, ChatType.CHANNEL, ChatStatus.ACTIVE, "Full Chat",
                 icon, 9999L, 100, 1L, java.util.Map.of("user1", 1L), true,
