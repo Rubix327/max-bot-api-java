@@ -16,6 +16,8 @@
 
 package ru.max.botapi.model;
 
+import java.util.List;
+
 /**
  * Permissions that can be granted to chat members.
  */
@@ -30,27 +32,55 @@ public enum ChatPermission {
     /** Permission to add new administrators. */
     ADD_ADMINS,
 
-    /** Permission to change chat info (title, icon, etc.). */
+    /** Permission to change chat or channel info (title, icon, etc.). */
     CHANGE_CHAT_INFO,
 
     /** Permission to pin messages. */
     PIN_MESSAGE,
 
-    /** Permission to edit and delete messages in group chats. */
+    /** Permission to edit and delete messages in group chats, and to write posts in channels. */
     WRITE,
 
-    /** Permission to make audio/video calls in group chats. */
+    /** Permission to make audio/video calls in group chats (not available for channels). */
     CAN_CALL,
 
-    /** Permission to edit the chat invite link in group chats. */
+    /** Permission to edit the chat invite link in group chats (not available for channels). */
     EDIT_LINK,
 
-    /** Permission to delete posts in public channels. */
+    /** Permission to delete posts in channels (not available for group chats). */
     DELETE,
 
-    /** Permission to edit any message in the chat. */
+    /** Permission to edit posts in channels (not available for group chats). */
     EDIT,
 
-    /** Permission to view chat statistics in public channels. */
-    VIEW_STATS
+    /** Permission to view chat statistics in channels (not available for group chats). */
+    VIEW_STATS;
+
+    public static List<ChatPermission> getChatPermissions(){
+        return List.of(
+                READ_ALL_MESSAGES,
+                WRITE,
+                PIN_MESSAGE,
+                CHANGE_CHAT_INFO,
+                ADD_REMOVE_MEMBERS,
+                ADD_ADMINS,
+                EDIT_LINK,
+                CAN_CALL
+        );
+    }
+
+    public static List<ChatPermission> getChannelPermissions(){
+        return List.of(
+                READ_ALL_MESSAGES,
+                EDIT,
+                DELETE,
+                WRITE,
+                PIN_MESSAGE,
+                CHANGE_CHAT_INFO,
+                ADD_REMOVE_MEMBERS,
+                ADD_ADMINS,
+                VIEW_STATS
+        );
+    }
+
 }
