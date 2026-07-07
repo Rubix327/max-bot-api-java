@@ -38,12 +38,12 @@ public class PostAdminsQuery extends MaxQuery<SimpleQueryResult> {
      * Creates a PostAdminsQuery.
      *
      * @param client     the MAX client to execute this query
-     * @param adminsList the list of admins to promote; must not be {@code null}
+     * @param admins the list of admins to promote; must not be {@code null}
      * @param chatId     the chat identifier
      */
-    public PostAdminsQuery(MaxClient client, ChatAdminsList adminsList, long chatId) {
+    public PostAdminsQuery(MaxClient client, ChatAdminsList admins, long chatId) {
         super(client, "/chats/" + chatId + "/members/admins", HttpMethod.POST,
                 SimpleQueryResult.class);
-        this.body = Objects.requireNonNull(adminsList, "adminsList must not be null");
+        this.body = Objects.requireNonNull(admins, "admins must not be null");
     }
 }

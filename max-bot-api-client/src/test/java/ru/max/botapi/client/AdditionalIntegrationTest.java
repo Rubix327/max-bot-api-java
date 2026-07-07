@@ -16,6 +16,7 @@
 
 package ru.max.botapi.client;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -25,36 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import ru.max.botapi.jackson.JacksonMaxSerializer;
-import ru.max.botapi.model.ActionRequestBody;
-import ru.max.botapi.model.BotInfo;
-import ru.max.botapi.model.BotPatch;
-import ru.max.botapi.model.CallbackAnswer;
-import ru.max.botapi.model.Chat;
-import ru.max.botapi.model.ChatAdminsList;
-import ru.max.botapi.model.ChatList;
-import ru.max.botapi.model.ChatMember;
-import ru.max.botapi.model.ChatMembersList;
-import ru.max.botapi.model.ChatPatch;
-import ru.max.botapi.model.GetPinnedMessageResult;
-import ru.max.botapi.model.GetSubscriptionsResult;
-import ru.max.botapi.model.Image;
-import ru.max.botapi.model.Message;
-import ru.max.botapi.model.MessageLinkType;
-import ru.max.botapi.model.MessageList;
-import ru.max.botapi.model.NewMessageBody;
-import ru.max.botapi.model.NewMessageLink;
-import ru.max.botapi.model.PinMessageBody;
-import ru.max.botapi.model.SendMessageResult;
-import ru.max.botapi.model.SenderAction;
-import ru.max.botapi.model.SimpleQueryResult;
-import ru.max.botapi.model.SubscriptionRequestBody;
-import ru.max.botapi.model.TextFormat;
-import ru.max.botapi.model.UpdateList;
-import ru.max.botapi.model.UpdateType;
-import ru.max.botapi.model.UploadEndpoint;
-import ru.max.botapi.model.UploadType;
-import ru.max.botapi.model.UserIdsList;
-import ru.max.botapi.model.VideoAttachmentDetails;
+import ru.max.botapi.model.*;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -584,7 +556,11 @@ class AdditionalIntegrationTest {
                                 {"success": true}
                                 """)));
 
-        ChatAdminsList adminsList = new ChatAdminsList(List.of(111L, 222L, 333L));
+        ChatAdminsList adminsList = new ChatAdminsList(List.of(
+                new ChatAdmin(111L, new ArrayList<>()),
+                new ChatAdmin(222L, new ArrayList<>()),
+                new ChatAdmin(333L, new ArrayList<>()))
+        );
         SimpleQueryResult result = api.postAdmins(adminsList, 789L).execute();
 
         assertThat(result.success()).isTrue();

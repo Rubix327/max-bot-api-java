@@ -16,66 +16,14 @@
 
 package ru.max.botapi.jackson;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import ru.max.botapi.model.ActionRequestBody;
-import ru.max.botapi.model.AttachmentRequest;
-import ru.max.botapi.model.AudioAttachment;
-import ru.max.botapi.model.BotCommand;
-import ru.max.botapi.model.BotPatch;
-import ru.max.botapi.model.ButtonIntent;
-import ru.max.botapi.model.ChatAdminsList;
-import ru.max.botapi.model.ChatList;
-import ru.max.botapi.model.ChatMember;
-import ru.max.botapi.model.ChatMembersList;
-import ru.max.botapi.model.ChatPatch;
-import ru.max.botapi.model.ChatPermission;
-import ru.max.botapi.model.ChatStatus;
-import ru.max.botapi.model.ChatType;
-import ru.max.botapi.model.ConstructedMessage;
-import ru.max.botapi.model.FileAttachment;
-import ru.max.botapi.model.FileUploadedInfo;
-import ru.max.botapi.model.GetPinnedMessageResult;
-import ru.max.botapi.model.GetSubscriptionsResult;
-import ru.max.botapi.model.Image;
-import ru.max.botapi.model.ImageUploadedInfo;
-import ru.max.botapi.model.InlineKeyboardAttachment;
-import ru.max.botapi.model.LocationAttachment;
-import ru.max.botapi.model.LocationAttachmentRequest;
-import ru.max.botapi.model.MediaPayload;
-import ru.max.botapi.model.MediaRequestPayload;
-import ru.max.botapi.model.MediaUploadedInfo;
-import ru.max.botapi.model.Message;
-import ru.max.botapi.model.MessageBody;
-import ru.max.botapi.model.MessageChatCreatedUpdate;
-import ru.max.botapi.model.MessageConstructedUpdate;
-import ru.max.botapi.model.MessageConstructionRequestUpdate;
-import ru.max.botapi.model.MessageCreatedUpdate;
-import ru.max.botapi.model.MessageLinkType;
-import ru.max.botapi.model.MessageList;
-import ru.max.botapi.model.MessageRecipient;
-import ru.max.botapi.model.NewMessageBody;
-import ru.max.botapi.model.NewMessageLink;
-import ru.max.botapi.model.PhotoAttachment;
-import ru.max.botapi.model.SendMessageResult;
-import ru.max.botapi.model.SenderAction;
-import ru.max.botapi.model.SimpleQueryResult;
-import ru.max.botapi.model.Subscription;
-import ru.max.botapi.model.TextFormat;
-import ru.max.botapi.model.Update;
-import ru.max.botapi.model.UpdateList;
-import ru.max.botapi.model.UpdateType;
-import ru.max.botapi.model.UploadEndpoint;
-import ru.max.botapi.model.User;
-import ru.max.botapi.model.UserIdsList;
-import ru.max.botapi.model.VideoAttachment;
-import ru.max.botapi.model.VideoAttachmentDetails;
-import ru.max.botapi.model.VideoAttachmentRequest;
-import ru.max.botapi.model.VideoThumbnail;
+import ru.max.botapi.model.*;
 import ru.max.botapi.testsupport.FixtureLoader;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -210,10 +158,14 @@ class AdditionalSerializationTest {
 
         @Test
         void chatAdminsList_roundTrip() {
-            var admins = new ChatAdminsList(List.of(1L, 2L, 3L));
+            var admins = new ChatAdminsList(List.of(
+                    new ChatAdmin(1L, new ArrayList<>()),
+                    new ChatAdmin(2L, new ArrayList<>()),
+                    new ChatAdmin(3L, new ArrayList<>())
+            ));
             String json = serializer.serialize(admins);
             ChatAdminsList deserialized = serializer.deserialize(json, ChatAdminsList.class);
-            assertThat(deserialized.userIds()).containsExactly(1L, 2L, 3L);
+            assertThat(deserialized.admins().stream().map(ChatAdmin::userId)).containsExactly(1L, 2L, 3L);
         }
 
         @Test

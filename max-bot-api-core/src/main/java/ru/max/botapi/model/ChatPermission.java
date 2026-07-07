@@ -36,21 +36,21 @@ public enum ChatPermission {
     /** Permission to pin messages. */
     PIN_MESSAGE,
 
-    /** Permission to write messages. */
+    /** Permission to edit and delete messages in group chats. */
     WRITE,
 
-    /** Permission to make audio/video calls. */
+    /** Permission to make audio/video calls in group chats. */
     CAN_CALL,
 
-    /** Permission to edit the chat invite link. */
+    /** Permission to edit the chat invite link in group chats. */
     EDIT_LINK,
 
-    /** Permission to delete the chat. */
+    /** Permission to delete posts in public channels. */
     DELETE,
 
     /** Permission to edit any message in the chat. */
     EDIT,
 
-    /** Permission to view chat statistics. */
+    /** Permission to view chat statistics in public channels. */
     VIEW_STATS
 }

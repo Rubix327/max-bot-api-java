@@ -16,6 +16,7 @@
 
 package ru.max.botapi.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -96,8 +97,11 @@ class ChatTypesTest {
 
     @Test
     void chatAdminsList_construction() {
-        var admins = new ChatAdminsList(List.of(1L, 2L, 3L));
-        assertThat(admins.userIds()).containsExactly(1L, 2L, 3L);
+        var admins = new ChatAdminsList(List.of(
+                new ChatAdmin(1L, new ArrayList<>()),
+                new ChatAdmin(2L, new ArrayList<>()),
+                new ChatAdmin(3L, new ArrayList<>())));
+        assertThat(admins.admins().stream().map(ChatAdmin::userId)).containsExactly(1L, 2L, 3L);
     }
 
     @Test

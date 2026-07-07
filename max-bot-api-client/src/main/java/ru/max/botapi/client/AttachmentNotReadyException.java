@@ -18,11 +18,14 @@ package ru.max.botapi.client;
 
 import ru.max.botapi.model.Nullable;
 
+import java.io.Serial;
+
 /**
  * Exception thrown when an attachment is not yet ready for retrieval.
  */
 public class AttachmentNotReadyException extends MaxApiException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

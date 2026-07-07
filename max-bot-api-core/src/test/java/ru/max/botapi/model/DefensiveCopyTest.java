@@ -62,11 +62,14 @@ class DefensiveCopyTest {
 
     @Test
     void chatAdminsList_defensiveCopy() {
-        var mutable = new ArrayList<>(List.of(1L, 2L));
+        var mutable = new ArrayList<>(List.of(
+                new ChatAdmin(1L, new ArrayList<>()),
+                new ChatAdmin(2L, new ArrayList<>())
+        ));
         var admins = new ChatAdminsList(mutable);
         mutable.clear();
-        assertThat(admins.userIds()).containsExactly(1L, 2L);
-        assertThatThrownBy(() -> admins.userIds().add(3L))
+        assertThat(admins.admins().stream().map(ChatAdmin::userId)).containsExactly(1L, 2L);
+        assertThatThrownBy(() -> admins.admins().add(new ChatAdmin(3L, new ArrayList<>())))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
